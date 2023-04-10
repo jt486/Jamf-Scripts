@@ -1,0 +1,38 @@
+#####################
+# SAP JDK Installer
+# Intel Macs
+# Must run with JDK.pkg
+#####################
+
+#!/bin/bash
+
+#Moves SAPGUIforJava from /private/tmp folder to $HOME folder
+download_path="/private/tmp/SAPGUIforJava"
+home_path="$HOME/SAPGUIforJava"
+
+# Checks if the SAPGUIforJava folder exists otherwise its moved to home user folder
+if [ -d "$download_path" ];then
+	mv "$download_path" "$home_path"
+	echo "Successfully moved SAPGUIforJava folder to $home_path"
+else
+	echo "Error: SAPGUIforJava folder not found in $download_path folder."
+fi
+
+# Setting the filename and path for .zshrc file
+filename=".zshrc"
+path="$HOME/$filename"
+
+# Create the file if it doesn't exist, otherwise append to it
+if [ ! -f "$path" ]; then
+	touch "$path"
+else
+	echo "File already exists."
+fi
+
+# Adding the Java enviroment variales to te .zshrc file
+echo "export JAVA_HOME=$HOME/SAPGUIforJava/opt/jdk/sapmachine-jdk-17.0.6.jdk/Contents/Home" >> "$path"
+echo 'export PATH="'$HOME'/SAPGUIforJava/opt/jdk/sapmachine-jdk-17.0.6.jdk/Contents/Home/bin:$PATH"' >> "$path"
+
+echo "File created at $path"
+
+osascript -e 'tell app "System Events" to display dialog "To complete installation of JDK.pkg for SAP, please log out from your Mac and log in again." buttons {"Cancel"} with title "Logout Warning" giving up after 30'
