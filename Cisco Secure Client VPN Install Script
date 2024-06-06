@@ -1,0 +1,70 @@
+#!/bin/zsh
+
+# The following script works with Cisco Secure Connect 5.1.2.42
+# March 2024
+
+# This script will uninstall the full install of Cisco AnyConnect with all the modules
+# It will first look for the existance of the dart installer. If it is there, it will run.
+# then it will run the full anyconnect uninstaller. After that is completed, then we can install
+# the new version of Cisco Anywhere that only installs the VPN component.
+
+# Uninstalls Cisco Secure Connect/AnyConnect
+cisco_uninstall() {
+	if [ -e "/opt/cisco/anyconnect/bin/dart_uninstall.sh" ]; then
+		sh /opt/cisco/anyconnect/bin/dart_uninstall.sh
+		sleep 1
+		sh /opt/cisco/anyconnect/bin/anyconnect_uninstall.sh
+	elif [ -e "/opt/cisco/secureclient/bin/dart_uninstall.sh" ]; then
+		sh /opt/cisco/secureclient/bin/dart_uninstall.sh
+		sleep 1
+		sh /opt/cisco/secureclient/bin/cisco_secure_client_uninstall.sh
+	elif ! [ -e "/opt/cisco/anyconnect/bin/dart_uninstall.sh" ] || ! [ -e "/opt/cisco/secureclient/bin/dart_uninstall.sh" ]; then
+		if [ -e "/opt/cisco/anyconnect/bin/anyconnect_uninstall.sh" ]; then
+			sh /opt/cisco/anyconnect/bin/anyconnect_uninstall.sh
+		elif [ -e "/opt/cisco/secureclient/bin/cisco_secure_client_uninstall.sh" ]; then
+			sh /opt/cisco/secureclient/bin/cisco_secure_client_uninstall.sh
+		else
+			echo "No VPN client found on Mac"
+		fi
+	else
+		echo "No VPN to uninstalled."
+	fi
+}
+
+# Installs Cisco Secure Connect
+cisco_ready() {
+	#This will install Cisco SecureConnect
+	/usr/sbin/installer -applyChoiceChangesXML /private/tmp/secureclient_choices.xml -pkg /private/tmp/CiscoSecureClient.pkg -target /
+	
+	#Copying the profile.xml to the VPN/profile folder
+	/bin/mv -f /tmp/secureclient_profile.xml /opt/cisco/secureclient/VPN/profile/
+	
+	#Copying the umbrella certificate to the umbrella folder
+	/bin/mv -f /tmp/Cisco_Umbrella_Root_CA.cer /opt/cisco/secureclient/umbrella/
+	
+	#Copying the orginfo.json to the umbrella folder
+	/bin/mv -f /tmp/OrgInfo.json /opt/cisco/secureclient/umbrella/
+	
+	
+	#This will cleanup the anyconnect files in the tmp folders
+	/bin/rm -rf /private/tmp/CiscoSecureClient.pkg
+	/bin/rm -rf /private/tmp/secureclient_choices.xml
+	/bin/rm -rf /private/tmp/secureclient_profile.xml
+	/bin/rm -rf /private/tmp/Cisco_Umbrella_Root_CA.cer
+	/bin/rm -rf /private/tmp/OrgInfo.json
+}
+
+# Checks if anyconnect or secureclient folders are present
+if [ -d "/opt/cisco/anyconnect/" ] || [ -d "/opt/cisco/secureclient/" ]; then
+	#calling uninstall function
+	cisco_uninstall 
+	sleep 3
+	# Clears the cisco folder
+	/bin/rm -rf /opt/cisco/
+	sleep 3
+	# calling Cisco Install function
+	cisco_ready 
+else
+	# calling Cisco Install function
+	cisco_ready
+fi
